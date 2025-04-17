@@ -1,11 +1,11 @@
-# 🛠️ SIC Assembler (C++ Implementation)
+#  SIC Assembler (C++ Implementation)
 
 This is a **two-pass assembler** for the **Simplified Instructional Computer (SIC)** architecture, written in **C++**.  
 It translates SIC assembly language programs into **object code** and generates an **assembly listing**.
 
 ---
 
-## ✨ Features
+##  Features
 
 ✅ Translate mnemonic operation codes to machine language equivalents.  
 ✅ Assign machine addresses to symbolic labels.  
@@ -14,7 +14,7 @@ It translates SIC assembly language programs into **object code** and generates 
 
 ---
 
-## 📜 Assembler Directives
+##  Assembler Directives
 
 Assembler directives are **pseudo instructions** for the assembler itself.  
 They do **not** generate machine code.
@@ -30,16 +30,16 @@ They do **not** generate machine code.
 
 ---
 
-## 🏗️ Implementation Overview
+##  Implementation Overview
 
 The assembler uses **two passes**:
 
-### 🔹 Pass 1: Address Assignment
+###  Pass 1: Address Assignment
 - Scans the source program.
 - Assigns addresses to all labels.
 - Builds the **symbol table**.
 
-### 🔹 Pass 2: Object Code Generation
+###  Pass 2: Object Code Generation
 - Translates mnemonics to machine code.
 - Resolves symbol references.
 - Generates:
@@ -48,25 +48,16 @@ The assembler uses **two passes**:
 
 ---
 
-## 📝 Object Program Format
+##  Object Program Format
 
 - **End of Record** → `00` (null character).
 - **End of File** → Zero-length record.
 
 ---
 
-## 📂 Outputs
+##  Outputs
 
 - `.obj` – Object program (machine code).
 - `.lst` – Assembly listing with addresses and object codes.
 
 ---
-
-## 🚀 How to Run
-
-```bash
-# Compile the assembler
-g++ -o sic_assembler main.cpp
-
-# Run the assembler with your source file
-./sic_assembler source.asm
