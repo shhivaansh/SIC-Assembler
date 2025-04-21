@@ -6,10 +6,10 @@
 
 using namespace std;
 
-vector < pair < string, pair < string, pair < string, string > > > > arr;
+vector < pair < string, pair < string, pair < string, string > > > > arr; // arr[i] = (address, (label, (mnemonic, operand)))
 string program_name, str, starting_address;
-map <string, string> labels;
-vector <string> object_code;
+map <string, string> labels; // Stores symbol table
+vector <string> object_code; // Stores final object code for each line
 
 void input()
 {
@@ -36,23 +36,25 @@ void input()
 				&& temp != "END"))
 			    {
 			    	if(!found_opcode)
-			    		arr[index].second.first = temp;
+			    		arr[index].second.first = temp; // it is a label (MAXLEN)
 			    	else
-			    		arr[index].second.second.second = temp;
+			    		arr[index].second.second.second = temp; // it is an operand (RETADR)
 			    }
 			    else
 			    {
-			    	arr[index].second.second.first = temp;
+			    	arr[index].second.second.first = temp; // it is a mnemonic (LDA)
 			    	found_opcode = 1;
 			    }
 			    temp.clear();
 			    flag = 0;
 			}
+			// sequence ADDRESS | LABEL | MNEMONIC | OPERAND	
 	    }
 	    index++;
 	}
 }
 
+//when we are required to compute next address 1027+3= 1030(in decimal) but here we will do 1027+3=102A
 int hexToDec(string str)
 {
     int y;
@@ -62,6 +64,8 @@ int hexToDec(string str)
     return y;
 }
 
+
+// WORD	4096(decimal)->1000(hex) Addressing: 103C->203C
 string decToHex(int num)
 {
     stringstream stream;
@@ -92,15 +96,15 @@ string add(string str, string adder, int flag)
 
 void addressing()
 {
-	arr[0].first = starting_address;
+	arr[0].first = starting_address; // First instruction gets starting address
 	if(arr[0].second.first.size() > 0)
-		labels[arr[0].second.first] = arr[0].first;
+		labels[arr[0].second.first] = arr[0].first; // Add label to symbol table
 
 	for(int i = 1; i < arr.size()-1; i++)
 	{
-		string mnemonic = arr[i-1].second.second.first;
+		string mnemonic = arr[i-1].second.second.first; // Previous line's mnemonic
 		string lastAddress = arr[i-1].first;
-		if(mnemonic != "BYTE" && mnemonic != "RESW" && mnemonic != "RESB")
+		if(mnemonic != "BYTE" && mnemonic != "RESW" && mnemonic != "RESB") // size = 3 bytes
 		{
 			arr[i].first = add(lastAddress, "3", 0);
 		}
@@ -134,13 +138,15 @@ void addressing()
     			string hexaReserve = decToHex(reserve);
     			arr[i].first = add(lastAddress, hexaReserve, 1);
 			}
-			else
+			else //RESW 1word=3bytes
 			{
 				int reserve = 3 * atoi(arr[i-1].second.second.second.c_str());
 				string hexaReserve = decToHex(reserve);
 				arr[i].first = add(lastAddress, hexaReserve, 1);
 			}
 		}
+
+		// If label is present, add to symbol table
 		if(arr[i].second.first.size() > 0)
 			labels[arr[i].second.first] = arr[i].first;
 	}
@@ -154,21 +160,25 @@ void generate_object_code()
 		int flag = 0;
 		objectCode.clear();
 		mnemonic = arr[i].second.second.first;
-		if(mnemonic == "RESW" || mnemonic == "RESB" || mnemonic == "END")
+		if(mnemonic == "RESW" || mnemonic == "RESB" || mnemonic == "END") //these do not have object code
 		{
 			object_code.push_back("\t");
 			continue;
 		}
+
+		// Extract operand, ignore indexing for now
 		operand.clear();
 		for(int l = 0; l < arr[i].second.second.second.size(); l++)
 		{
 			if(arr[i].second.second.second[l] == ',')
 			{
-				flag = 1;
+				flag = 1; // Mark as indexed
 				break;
 			}
 			operand += arr[i].second.second.second[l];
 		}
+
+		// BYTE constant to object code (means jitne bytes utna add ho jayega address mein)
 		if(mnemonic == "BYTE")
 		{
 			if(operand[0] == 'C')
@@ -179,7 +189,7 @@ void generate_object_code()
 					objectCode += (decToHex(ascii));
 				}
 			}
-			else
+			else // Hex constant (this also will be added similarly the above one)
 			{
 				for(int i = 2; i < operand.size()-1; i++)
 				{
@@ -198,6 +208,8 @@ void generate_object_code()
 			object_code.push_back(objectCode);
 			continue;
 		}
+
+		// WORD is 3 bytes
 		if(mnemonic == "WORD")
 		{
 			objectCode += decToHex(atoi(operand.c_str()));
@@ -213,20 +225,24 @@ void generate_object_code()
 			object_code.push_back(objectCode);
 			continue;
 		}
+
+
 		objectCode += get_opcode(mnemonic);
-		if(operand == "\t")
+		if(operand == "\t") // If no operand, pad with zeros
 		{
 			objectCode += "0000";
 			object_code.push_back(objectCode);
 			continue;
 		}
-		label_address = labels[operand];
-		if(label_address[0] > '7')
+		label_address = labels[operand]; // Convert operand label to address
+
+		// If address starts beyond 7xxx, reduce by 8xxx (simulate 15 and 8 bit limit)
+		if(label_address[0] > '7') // '8' in hex means the binary address starts with 1000, which exceeds 15 bits.
 		{
 			if(label_address[0] >= 'A')
-				label_address[0] -= 15;
+				label_address[0] -= 15; // If it’s 'A' to 'F', subtract 15
 			else
-				label_address[0] -= 8;
+				label_address[0] -= 8; // If it’s '8' or '9', subtract 8
 		}
 		objectCode += label_address;
 		if(flag)
